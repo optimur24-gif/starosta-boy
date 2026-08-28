@@ -28,8 +28,8 @@ MAIN_ADMIN_ID = 1153815035
 # Часовой пояс МСК+2 (Екатеринбург)
 TIMEZONE = ZoneInfo("Asia/Yekaterinburg")
 
-DB_PATH = "bot_data.db"
-BACKUP_DIR = "backups"
+DB_PATH = "/app/data/bot_data.db"
+BACKUP_DIR = "/app/data/backups"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -40,7 +40,7 @@ scheduler = None
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)s | %(message)s',
-    handlers=[logging.FileHandler("bot.log", encoding="utf-8"), logging.StreamHandler()]
+    handlers=[logging.FileHandler("/app/data/bot.log", encoding="utf-8"), logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
