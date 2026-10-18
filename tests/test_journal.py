@@ -38,9 +38,12 @@ async def test_notice_precedes_recording_old_edits_and_callbacks_are_excluded(se
     profiles,observer,ctx=setup
     await observer.handle(update(1,text='Before warning'),ctx)
     ctx.bot.send_message.assert_awaited_once()
-    assert '@Owner' in ctx.bot.send_message.call_args.args[1]
+    notice = ctx.bot.send_message.call_args.args[1]
+    assert '@Owner' in notice
+    assert 'журнал' in notice and 'удалите бота' in notice
+    assert 'Личные сообщения' in notice
     assert not profiles.journals.log_path(-10).exists()
-    ctx.bot.pin_chat_message.assert_awaited_once()
+    ctx.bot.pin_chat_message.assert_not_awaited()
     await observer.handle(update(101,text='После предупреждения\nПоддельная строка'),ctx)
     await observer.handle(update(101,text='После предупреждения\nПоддельная строка'),ctx)
     await observer.handle(update(50,text='Old edit',edited=True),ctx)
