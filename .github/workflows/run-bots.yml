@@ -1,0 +1,101 @@
+name: Run bots and check schedules
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'Сколько минут держать ботов включёнными (5–120)'
+        required: true
+        default: '15'
+
+permissions:
+  contents: read
+
+# Never poll the same Telegram identities from two workflow runs concurrently.
+concurrency:
+  group: bgmu-telegram-bots
+  cancel-in-progress: true
+
+jobs:
+  check-and-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      PYTHONUNBUFFERED: '1'
+      BGMU_DATA_DIR: .data
+      DATA_DIR: .data/restricted
+      ADMIN_USERNAME: Timur0_15
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      RESTRICTED_BOT_TOKEN: ${{ secrets.RESTRICTED_BOT_TOKEN }}
+      BGMU_PROXY_URL: ${{ secrets.BGMU_PROXY_URL }}
+      RUN_MINUTES: ${{ inputs.minutes || '15' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.23'
+      - name: Install locked dependencies
+        run: uv sync --locked
+      - name: Run all tests without real tokens
+        env:
+          TELEGRAM_BOT_TOKEN: ''
+          RESTRICTED_BOT_TOKEN: ''
+          BGMU_PROXY_URL: ''
+        run: uv run --locked python -m pytest -q
+      - name: Fetch group, teacher and room schedules
+        continue-on-error: true
+        run: |
+          mkdir -p .runtime
+          uv run --locked python -m bgmu_bot.check_source --live --report .runtime/website.json
+      - name: Verify live snapshot and backups
+        continue-on-error: true
+        run: uv run --locked python -m tools.check_daily_snapshot
+      - name: Validate bot credentials and local configuration
+        run: |
+          uv run --locked python - <<'PY'
+          import os
+          from restricted_bot.policy import EXPECTED_BOT_ID
+          for name in ('TELEGRAM_BOT_TOKEN', 'RESTRICTED_BOT_TOKEN'):
+              token = os.environ.get(name, '').strip()
+              if not token:
+                  raise SystemExit(f'Add {name} in repository Settings → Secrets and variables → Actions.')
+          public = os.environ['TELEGRAM_BOT_TOKEN'].strip()
+          restricted = os.environ['RESTRICTED_BOT_TOKEN'].strip()
+          if public == restricted:
+              raise SystemExit('Two distinct bot tokens are required.')
+          if restricted.split(':', 1)[0] != str(EXPECTED_BOT_ID):
+              raise SystemExit('RESTRICTED_BOT_TOKEN belongs to a different bot identity.')
+          duration = os.environ['RUN_MINUTES']
+          if not duration.isdigit() or not 5 <= int(duration) <= 120:
+              raise SystemExit('Duration must be between 5 and 120 minutes.')
+          print('Token bindings and configured management bot ID are valid; token values are hidden.')
+          PY
+          uv run --locked python -m restricted_bot --check
+      - name: Run both bots (live console)
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .runtime
+          echo "Starting both bots for ${RUN_MINUTES} minutes. Stop this run with Cancel workflow."
+          set +e
+          timeout --signal=INT --kill-after=30s "${RUN_MINUTES}m" ./run.sh 2>&1 | tee .runtime/bots.log
+          bot_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$bot_status" -eq 124 ]; then
+            echo 'The configured trial period ended; both bots were stopped.'
+            exit 0
+          fi
+          exit "$bot_status"
+      - name: Save diagnostic reports and console output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-diagnostics-${{ github.run_id }}
+          retention-days: 3
+          if-no-files-found: ignore
+          path: |
+            .runtime/website.json
+            .runtime/bots.log
+            verification/daily-diagnostic.json

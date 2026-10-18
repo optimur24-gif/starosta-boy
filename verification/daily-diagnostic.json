@@ -1,0 +1,15 @@
+{
+  "status": "failed",
+  "run_id": null,
+  "sampled": true,
+  "telegram_bots_started": false,
+  "checked_at": "2026-10-18T10:17:57.547378+00:00",
+  "error_type": "SourceError",
+  "error": "Сетевой шлюз или прокси отклонил соединение. Проверьте доступ, порт и авторизацию прокси.",
+  "website_requests": 1,
+  "last_request": {
+    "action": "period"
+  },
+  "last_response": {},
+  "full_catalog_counts": {}
+}

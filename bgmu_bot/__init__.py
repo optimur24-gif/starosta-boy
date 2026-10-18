@@ -1,0 +1,1 @@
+"""Live BGMU schedule bot."""

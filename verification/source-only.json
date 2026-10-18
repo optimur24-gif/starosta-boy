@@ -1,0 +1,104 @@
+{
+  "status": "passed",
+  "checked_at": "2026-10-17T21:25:58.034815+00:00",
+  "proxy_configured": false,
+  "year": "26",
+  "semester": "1",
+  "scenarios": [
+    {
+      "mode": "group",
+      "entity": "Л-101",
+      "date": "2026-09-02",
+      "semester_events": 234,
+      "day_lessons": 1,
+      "telegram_messages": 1,
+      "subgroups_checked": [
+        "А",
+        "Б"
+      ],
+      "week_days": 7,
+      "week_messages": 1
+    },
+    {
+      "mode": "teacher",
+      "entity": "Абдельгани Яссер Осама Сабер",
+      "date": "2026-09-19",
+      "semester_events": 13,
+      "day_lessons": 1,
+      "telegram_messages": 1,
+      "subgroups_checked": [],
+      "week_days": 7,
+      "week_messages": 1
+    },
+    {
+      "mode": "room",
+      "entity": "Учебная комната № 1 — ГБУЗ РБ ГКБ № 21 Административное здание",
+      "date": "2026-09-24",
+      "semester_events": 6,
+      "day_lessons": 1,
+      "telegram_messages": 1,
+      "subgroups_checked": [],
+      "week_days": 7,
+      "week_messages": 1
+    }
+  ],
+  "personal_group_lookup": true,
+  "group_prefixes": [
+    "Б-",
+    "Б/о-з-",
+    "Без префикса",
+    "БиБ-",
+    "БМ-",
+    "БМ/о-з-",
+    "КП-",
+    "Л-",
+    "МБФ-",
+    "МБХ-",
+    "МПД-",
+    "МПФ-",
+    "ОЗМ-",
+    "ОЗМ/о-з-",
+    "П-",
+    "ПФМ-",
+    "СД-",
+    "СД/о-з-",
+    "СР-",
+    "СР/з-",
+    "СР/о-з-",
+    "СРМ-",
+    "СРМ/о-з-",
+    "Ст-",
+    "Ф-",
+    "Э-"
+  ],
+  "refresh": {
+    "refreshed_at": "2026-10-17T21:25:51.715591+00:00",
+    "catalogs": 3,
+    "groups": 1,
+    "on_demand_groups": 0
+  },
+  "linked_schedule": {
+    "group": "П-114",
+    "semester_events": 277,
+    "memory_only": true
+  },
+  "course_refresh": {
+    "refreshed_at": "2026-10-17T21:25:54.744798+00:00",
+    "faculty": "Медико-профилактический факультет",
+    "course": "3",
+    "groups": 1,
+    "cached_groups": 1,
+    "stale_groups": 0
+  },
+  "run_id": "39070888843",
+  "telegram_bots_started": false,
+  "upcoming": {
+    "group": "П-114",
+    "today_ufa": "2026-10-18",
+    "today_events": 0,
+    "tomorrow_events": 4,
+    "next_7_days_events": 17,
+    "last_event_date": "2027-01-29",
+    "source_stale": false
+  }
+}

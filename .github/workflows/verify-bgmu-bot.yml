@@ -1,0 +1,56 @@
+name: Verify BGMU bot against the website
+
+on:
+  push:
+    branches: [codex/bgmu-telegram-bot, codex/personal-schedule, codex/group-chat-schedules, codex/shared-p114, codex/course-refresh, codex/admin-broadcasts]
+    paths:
+      - bgmu_bot/**
+      - restricted_bot/**
+      - tests/**
+      - main.py
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/verify-bgmu-bot.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify-bgmu-bot
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.23"
+      - name: Install locked dependencies
+        run: uv sync --locked
+      - name: Run tests
+        run: uv run --locked python -m pytest -q
+      - name: Exercise the real schedule adapter
+        env:
+          BGMU_PROXY_URL: ${{ secrets.BGMU_PROXY_URL }}
+        run: uv run --locked python -m bgmu_bot.check_source --live --report verification/live.json
+      - name: Return verification results through Git
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f verification/live.json ]; then
+            exit 0
+          fi
+          git add -- verification/live.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'test: record live BGMU adapter verification'
+          git push origin "HEAD:$GITHUB_REF_NAME"

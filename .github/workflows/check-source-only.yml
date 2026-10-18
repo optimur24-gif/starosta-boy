@@ -1,0 +1,81 @@
+name: Website schedule check only (no Telegram bots)
+
+on:
+  push:
+    branches: [codex/admin-broadcasts]
+    paths: [.github/workflows/check-source-only.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bgmu-source-only-check
+  cancel-in-progress: true
+
+jobs:
+  website-only:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TELEGRAM_BOT_TOKEN: ""
+      RESTRICTED_BOT_TOKEN: ""
+      BGMU_PROXY_URL: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.23"
+      - name: Install locked dependencies
+        run: uv sync --locked
+      - name: Fetch and validate fresh website data without bots or proxy
+        run: |
+          rm -f verification/source-only.json
+          uv run --locked python -m bgmu_bot.check_source --live --report verification/source-only.json
+      - name: Check current and upcoming P-114 dates
+        run: |
+          uv run --locked python - <<'PY'
+          import asyncio
+          from datetime import datetime, timedelta, timezone
+          import json
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          from bgmu_bot.bgmu import BGMUSource
+          from bgmu_bot.shared_schedule import normalize_group
+          from bgmu_bot.website import WebsiteClient
+
+          async def check():
+              async with WebsiteClient.from_environment() as website:
+                  source = BGMUSource(website, cache_ttl=300)
+                  matches = await source.search_groups('П-114')
+                  exact = [m for m in matches if normalize_group(m.labels[5]) == normalize_group('П-114')]
+                  if len(exact) != 1:
+                      raise RuntimeError('Group lookup is not unique')
+                  payload = await source._schedule_data(exact[0].path + ('*',))
+                  today = datetime.now(ZoneInfo('Asia/Yekaterinburg')).date()
+                  dates = [e['date'] for e in payload['events'] if e.get('date')]
+                  path = Path('verification/source-only.json')
+                  report = json.loads(path.read_text())
+                  report.update(run_id=__import__('os').environ['GITHUB_RUN_ID'], telegram_bots_started=False,
+                      checked_at=datetime.now(timezone.utc).isoformat(), upcoming={
+                          'group': 'П-114', 'today_ufa': today.isoformat(),
+                          'today_events': dates.count(today.isoformat()),
+                          'tomorrow_events': dates.count((today+timedelta(days=1)).isoformat()),
+                          'next_7_days_events': sum(today.isoformat() <= d < (today+timedelta(days=7)).isoformat() for d in dates),
+                          'last_event_date': max(dates) if dates else None,
+                          'source_stale': bool((payload.get('meta') or {}).get('stale')),
+                      })
+                  path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+                  print(json.dumps(report['upcoming'],ensure_ascii=False,indent=2))
+          asyncio.run(check())
+          PY
+      - name: Return fresh report through Git
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -f verification/source-only.json ]; then exit 0; fi
+          git add verification/source-only.json
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'test: record standalone website schedule check'
+          git push origin "HEAD:$GITHUB_REF_NAME"

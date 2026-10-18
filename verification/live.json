@@ -1,0 +1,76 @@
+{
+  "status": "passed",
+  "checked_at": "2026-10-18T09:07:52.333107+00:00",
+  "proxy_configured": false,
+  "year": "26",
+  "semester": "1",
+  "scenarios": [
+    {
+      "mode": "group",
+      "entity": "Л-101",
+      "date": "2026-09-02",
+      "semester_events": 234,
+      "day_lessons": 1,
+      "telegram_messages": 1,
+      "subgroups_checked": [
+        "А",
+        "Б"
+      ],
+      "week_days": 7,
+      "week_messages": 1
+    }
+  ],
+  "personal_group_lookup": true,
+  "group_prefixes": [
+    "Б-",
+    "Б/о-з-",
+    "Без префикса",
+    "БиБ-",
+    "БМ-",
+    "БМ/о-з-",
+    "КП-",
+    "Л-",
+    "МБФ-",
+    "МБХ-",
+    "МПД-",
+    "МПФ-",
+    "ОЗМ-",
+    "ОЗМ/о-з-",
+    "П-",
+    "ПФМ-",
+    "СД-",
+    "СД/о-з-",
+    "СР-",
+    "СР/з-",
+    "СР/о-з-",
+    "СРМ-",
+    "СРМ/о-з-",
+    "Ст-",
+    "Ф-",
+    "Э-"
+  ],
+  "refresh": {
+    "refreshed_at": "2026-10-18T09:07:54.462438+00:00",
+    "catalogs": 1,
+    "groups": 1,
+    "on_demand_groups": 0
+  },
+  "offline_snapshot": {
+    "restart_passes": 2,
+    "entity_types_checked": 1,
+    "website_requests_during_reads": 0
+  },
+  "linked_schedule": {
+    "group": "П-114",
+    "semester_events": 277,
+    "memory_only": true
+  },
+  "course_refresh": {
+    "refreshed_at": "2026-10-18T09:08:02.138176+00:00",
+    "faculty": "Медико-профилактический факультет",
+    "course": "3",
+    "groups": 1,
+    "cached_groups": 1,
+    "stale_groups": 0
+  }
+}

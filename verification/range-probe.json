@@ -1,0 +1,74 @@
+{
+  "filters": [
+    {
+      "keys": [
+        null,
+        null
+      ],
+      "count": 277,
+      "bytes": 234322,
+      "outside": 243,
+      "min_date": "2026-09-02",
+      "max_date": "2027-01-29"
+    },
+    {
+      "keys": [
+        "date_from",
+        "date_to"
+      ],
+      "count": 277,
+      "bytes": 234322,
+      "outside": 243,
+      "min_date": "2026-09-02",
+      "max_date": "2027-01-29"
+    },
+    {
+      "keys": [
+        "from",
+        "to"
+      ],
+      "count": 277,
+      "bytes": 234322,
+      "outside": 243,
+      "min_date": "2026-09-02",
+      "max_date": "2027-01-29"
+    },
+    {
+      "keys": [
+        "start",
+        "end"
+      ],
+      "count": 277,
+      "bytes": 234322,
+      "outside": 243,
+      "min_date": "2026-09-02",
+      "max_date": "2027-01-29"
+    },
+    {
+      "keys": [
+        "start_date",
+        "end_date"
+      ],
+      "count": 277,
+      "bytes": 234322,
+      "outside": 243,
+      "min_date": "2026-09-02",
+      "max_date": "2027-01-29"
+    },
+    {
+      "keys": [
+        "dateFrom",
+        "dateTo"
+      ],
+      "count": 277,
+      "bytes": 234322,
+      "outside": 243,
+      "min_date": "2026-09-02",
+      "max_date": "2027-01-29"
+    }
+  ],
+  "frontend_schedule_snippets": [
+    "Focus?.isConnected)lastFocus.focus();}\r\n}\r\nasync function api(params,signal){\r\n  const url=new URL('api.php',location.href);url.search=new URLSearchParams(params);\r\n  let response;\r\n  try{response=await fetch(url,{signal,headers:{Accept:'application/json'},cache:'no-store'});}catch(e){if(e.name==='AbortError')throw e;throw ne",
+    "sh').disabled=true;$('events').setAttribute('aria-busy','true');\r\n  try{\r\n    const data=await api({action:'schedule',type:selected.type,id:selected.id,year,semester},scheduleAbort.signal);\r\n    if(epoch!==state.scheduleEpoch)return;\r\n    state.response=data;state.events=data.events;state.selected={...data.entity,type:selected.type,ye"
+  ]
+}
