@@ -44,7 +44,7 @@ jobs:
           RESTRICTED_BOT_TOKEN: ''
           BGMU_PROXY_URL: ''
         run: uv run --locked python -m pytest -q
-      - name: Fetch group, teacher and room schedules
+      - name: Fetch configured group schedules
         continue-on-error: true
         run: |
           mkdir -p .runtime
