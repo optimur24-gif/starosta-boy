@@ -30,7 +30,7 @@ jobs:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       RESTRICTED_BOT_TOKEN: ${{ secrets.RESTRICTED_BOT_TOKEN }}
       BGMU_PROXY_URL: ${{ secrets.BGMU_PROXY_URL }}
-      RUN_MINUTES: ${{ inputs.minutes || '15' }}
+      RUN_MINUTES: ${{ inputs.minutes || '120' }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -44,6 +44,17 @@ jobs:
           RESTRICTED_BOT_TOKEN: ''
           BGMU_PROXY_URL: ''
         run: uv run --locked python -m pytest -q
+      - name: Diagnose secret bindings without revealing values
+        run: |
+          uv run --locked python - <<'PYCODE'
+          import os
+          for name in ('TELEGRAM_BOT_TOKEN', 'RESTRICTED_BOT_TOKEN'):
+              value = os.environ.get(name, '').strip()
+              print('::notice::' + name + ': ' + ('present' if value else 'MISSING'), flush=True)
+          restricted = os.environ.get('RESTRICTED_BOT_TOKEN', '').strip()
+          if restricted:
+              print('::notice::Management bot identity: ' + ('correct' if restricted.split(':', 1)[0] == '8591550954' else 'WRONG TOKEN'), flush=True)
+          PYCODE
       - name: Fetch configured group schedules
         continue-on-error: true
         run: |
@@ -52,24 +63,29 @@ jobs:
       - name: Verify live snapshot and backups
         continue-on-error: true
         run: uv run --locked python -m tools.check_daily_snapshot
+      - name: Download ALL group schedules and verify offline use
+        run: uv run --locked python -m tools.fetch_schedule
       - name: Validate bot credentials and local configuration
         run: |
           uv run --locked python - <<'PY'
           import os
           from restricted_bot.policy import EXPECTED_BOT_ID
+          def fail(message):
+              print('::error::' + message, flush=True)
+              raise SystemExit(1)
           for name in ('TELEGRAM_BOT_TOKEN', 'RESTRICTED_BOT_TOKEN'):
               token = os.environ.get(name, '').strip()
               if not token:
-                  raise SystemExit(f'Add {name} in repository Settings → Secrets and variables → Actions.')
+                  fail(f'Add {name} in repository Settings → Secrets and variables → Actions → Repository secrets.')
           public = os.environ['TELEGRAM_BOT_TOKEN'].strip()
           restricted = os.environ['RESTRICTED_BOT_TOKEN'].strip()
           if public == restricted:
-              raise SystemExit('Two distinct bot tokens are required.')
+              fail('Two distinct bot tokens are required.')
           if restricted.split(':', 1)[0] != str(EXPECTED_BOT_ID):
-              raise SystemExit('RESTRICTED_BOT_TOKEN belongs to a different bot identity.')
+              fail('RESTRICTED_BOT_TOKEN must be the SECOND supplied token (bot ID 8591550954).')
           duration = os.environ['RUN_MINUTES']
           if not duration.isdigit() or not 5 <= int(duration) <= 120:
-              raise SystemExit('Duration must be between 5 and 120 minutes.')
+              fail('Duration must be between 5 and 120 minutes.')
           print('Token bindings and configured management bot ID are valid; token values are hidden.')
           PY
           uv run --locked python -m restricted_bot --check
@@ -96,6 +112,9 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
           path: |
+            .runtime/full-schedule.json
+            .data/schedule.sqlite3
+            .data/backups/schedule.sqlite3
             .runtime/website.json
             .runtime/bots.log
             verification/daily-diagnostic.json
