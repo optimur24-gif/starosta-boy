@@ -139,29 +139,13 @@ class JournalObserver:
 
 def _notice_text(owner):
     return (
-        '⚠️ В этом чате ведётся журнал сообщений\n\n'
-        'После этого предупреждения бот сохраняет новые доступные ему сообщения: '
-        'автора, время, текст и подписи к вложениям. Фото, видео и другие файлы '
-        'не скачиваются — в журнале остаются пометки. Правки записываются отдельной строкой.\n'
-        f'Доступ к журналу на хостинге есть у владельца бота @{owner}. '
-        'Владелец может скачать и вручную очистить журнал. '
-        'Старые сообщения до предупреждения и личные сообщения боту не записываются.\n\n'
-        'Журнал работает, пока бот находится в чате. '
-        'Чтобы остановить запись, удалите бота из чата. '
-        'Отключение рассылок и команд запись не останавливает. '
-        'Telegram может передавать боту только часть сообщений в зависимости от его прав.'
+        приятного испоьзования
     )
 
 
 class JournalNotices:
-    def __init__(self, profiles, store, owner_username):
-        self.profiles,self.store = profiles,store
-        self.notice = _notice_text(owner_username)
-        if not isinstance(self.notice,str) or not self.notice.strip():
-            raise ValueError('Empty journal disclosure')
-        self.signature = hashlib.sha256(self.notice.encode()).hexdigest()
-        self.locks = [asyncio.Lock() for _ in range(32)]
-        self.retry_after = {}
+        self.retry_after.pop(chat_id,None)
+        return True
 
     def lock(self, chat_id):
         return self.locks[abs(chat_id)%len(self.locks)]
