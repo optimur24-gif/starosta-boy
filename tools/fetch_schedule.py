@@ -17,7 +17,7 @@ from bgmu_bot.source import SourceError
 from bgmu_bot.website import WebsiteClient
 
 
-async def fetch(report_path):
+async def fetch(report_path, *, reuse_recent=False):
     directory = Path(os.environ.get('BGMU_DATA_DIR', '.data'))
     report = {'status': 'failed', 'checked_at': datetime.now(timezone.utc).isoformat()}
     try:
@@ -26,7 +26,19 @@ async def fetch(report_path):
             source = BGMUSource(website)
             source.use_snapshot(directory / 'schedule.sqlite3')
             source.snapshot.after_publish = backups.save_snapshot
-            report['snapshot'] = await source.refresh()
+            info = source.snapshot.info() if reuse_recent else {}
+            try:
+                age = (datetime.now(timezone.utc) - datetime.fromisoformat(info.get('full_refresh_at', ''))).total_seconds()
+                recent = 0 <= age <= 600
+            except (ValueError, TypeError):
+                recent = False
+            if recent:
+                report['snapshot'] = info
+                report['reused_snapshot'] = True
+                if not backups.save_snapshot(source.snapshot.path):
+                    raise SourceError('Could not back up the restored schedule')
+            else:
+                report['snapshot'] = await source.refresh()
         # Prove that every catalog entry is readable from the published file,
         # with HTTP forbidden, including the management bot's shared П-114 feed.
         def forbid_http(request):
@@ -66,10 +78,11 @@ async def fetch(report_path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', default='.runtime/full-schedule.json')
+    parser.add_argument('--reuse-recent', action='store_true', help='Reuse a fully downloaded snapshot no older than 10 minutes; always verify all groups offline')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
     logging.getLogger('httpx').setLevel(logging.WARNING)
-    return asyncio.run(fetch(args.report))
+    return asyncio.run(fetch(args.report, reuse_recent=args.reuse_recent))
 
 
 if __name__ == '__main__':

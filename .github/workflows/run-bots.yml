@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 # Never poll the same Telegram identities from two workflow runs concurrently.
 concurrency:
@@ -26,6 +27,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
       BGMU_DATA_DIR: .data
       DATA_DIR: .data/restricted
+      GROUP_CHAT_ID: ${{ vars.GROUP_CHAT_ID || '-5519960135' }}
       ADMIN_USERNAME: Timur0_15
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       RESTRICTED_BOT_TOKEN: ${{ secrets.RESTRICTED_BOT_TOKEN }}
@@ -67,8 +69,18 @@ jobs:
       - name: Verify live snapshot and backups
         continue-on-error: true
         run: uv run --locked python -m tools.check_daily_snapshot
+      - name: Restore a recent schedule from a trusted main run
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          candidate="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("full-schedule-")) and .workflow_run.head_branch == "main" and .workflow_run.head_repository_id == .workflow_run.repository_id)][0] | if . then "\(.workflow_run.id) \(.name)" else "" end')"
+          if [[ -n "$candidate" ]]; then
+            read -r source_run_id schedule_artifact <<< "$candidate"
+            gh run download "$source_run_id" --repo "$GITHUB_REPOSITORY" --name "$schedule_artifact" --dir .
+          fi
       - name: Download ALL group schedules and verify offline use
-        run: uv run --locked python -m tools.fetch_schedule
+        run: uv run --locked python -m tools.fetch_schedule --reuse-recent
       - name: Save full schedule immediately
         uses: actions/upload-artifact@v4
         with:

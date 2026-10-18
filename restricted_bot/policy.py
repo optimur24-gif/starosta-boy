@@ -1,9 +1,21 @@
 """Fixed boundaries taken from the user's original bot."""
 
+import os
+
 from aiogram import BaseMiddleware, Bot
 
 EXPECTED_BOT_ID = 8591550954
-GROUP_CHAT_ID = -1004345960675
+def configured_group_id():
+    try:
+        value = int(os.environ.get('GROUP_CHAT_ID', '-5519960135'))
+    except ValueError:
+        raise RuntimeError('GROUP_CHAT_ID must be a negative numeric Telegram group ID.') from None
+    if value >= 0:
+        raise RuntimeError('GROUP_CHAT_ID must be a negative numeric Telegram group ID.')
+    return value
+
+
+GROUP_CHAT_ID = configured_group_id()
 
 
 class ScopedBot(Bot):

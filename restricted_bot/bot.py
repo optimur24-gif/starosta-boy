@@ -25,7 +25,7 @@ except ImportError:
         return False
 
 from aiogram import Dispatcher, F, Router
-from .policy import ScopedBot as Bot, ScopeMiddleware, EXPECTED_BOT_ID, RequestCooldownMiddleware
+from .policy import ScopedBot as Bot, ScopeMiddleware, EXPECTED_BOT_ID, GROUP_CHAT_ID, RequestCooldownMiddleware
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, StateFilter
@@ -61,7 +61,6 @@ if not BOT_TOKEN:
     raise RuntimeError("Не указан RESTRICTED_BOT_TOKEN")
 if not BOT_TOKEN.split(":", 1)[0].isdigit() or int(BOT_TOKEN.split(":", 1)[0]) != EXPECTED_BOT_ID:
     raise RuntimeError("Управление разрешено только исходному боту из прикреплённого файла")
-GROUP_CHAT_ID = -1004345960675
 MAIN_ADMIN_ID = 1153815035
 try:
     TIMEZONE = ZoneInfo(os.getenv("TZ_NAME", "Asia/Yekaterinburg"))

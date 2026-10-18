@@ -10,7 +10,9 @@ from tools import fetch_schedule
 
 @pytest.mark.asyncio
 async def test_full_download_publishes_backup_and_verifies_all_groups_offline(tmp_path, monkeypatch):
+    calls = []
     def respond(request):
+        calls.append(request)
         payload = api_response(request)
         params = dict(request.url.params)
         if params['action'] == 'catalog':
@@ -29,6 +31,10 @@ async def test_full_download_publishes_backup_and_verifies_all_groups_offline(tm
     assert data['offline_reads_passed'] and data['backup_verified']
     assert (tmp_path / 'schedule.sqlite3').is_file()
     assert (tmp_path / 'backups/schedule.sqlite3').is_file()
+    downloaded = len(calls)
+    assert await fetch_schedule.fetch(report, reuse_recent=True) == 0
+    assert json.loads(report.read_text())['reused_snapshot'] is True
+    assert len(calls) == downloaded
 
 
 @pytest.mark.asyncio
