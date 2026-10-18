@@ -55,6 +55,10 @@ jobs:
           if restricted:
               print('::notice::Management bot identity: ' + ('correct' if restricted.split(':', 1)[0] == '8591550954' else 'WRONG TOKEN'), flush=True)
           PYCODE
+      - name: Assign secrets to the correct bots by ID
+        id: tokens
+        continue-on-error: true
+        run: uv run --locked python -m tools.configure_github_tokens
       - name: Fetch configured group schedules
         continue-on-error: true
         run: |
@@ -65,6 +69,17 @@ jobs:
         run: uv run --locked python -m tools.check_daily_snapshot
       - name: Download ALL group schedules and verify offline use
         run: uv run --locked python -m tools.fetch_schedule
+      - name: Save full schedule immediately
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-schedule-${{ github.run_id }}
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            .data/schedule.sqlite3
+            .data/backups/schedule.sqlite3
+            .runtime/full-schedule.json
       - name: Validate bot credentials and local configuration
         run: |
           uv run --locked python - <<'PY'
@@ -109,6 +124,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bot-diagnostics-${{ github.run_id }}
+          include-hidden-files: true
           retention-days: 3
           if-no-files-found: ignore
           path: |
