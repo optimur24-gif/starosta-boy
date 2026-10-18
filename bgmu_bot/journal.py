@@ -138,37 +138,41 @@ class JournalObserver:
 
 
 def _notice_text(owner):
-    return (
-        приятного испоьзования
-    )
+    return 'приятного испоьзования'
 
 
 class JournalNotices:
-        self.retry_after.pop(chat_id,None)
-        return True
+    def __init__(self, profiles, store, owner_username):
+        self.profiles, self.store = profiles, store
+        self.notice = _notice_text(owner_username)
+        if not isinstance(self.notice, str) or not self.notice.strip():
+            raise ValueError('Empty journal disclosure')
+        self.signature = hashlib.sha256(self.notice.encode()).hexdigest()
+        self.locks = [asyncio.Lock() for _ in range(32)]
+        self.retry_after = {}
 
     def lock(self, chat_id):
-        return self.locks[abs(chat_id)%len(self.locks)]
+        return self.locks[abs(chat_id) % len(self.locks)]
 
     async def ensure_notice(self, bot, chat_id, *, rejoined=False):
         state = self.store.state(chat_id)
         if not rejoined and state:
-            if not state['present']:return False
-            if state['notice_id'] and state['signature']==self.signature:return True
-        if time.monotonic() < self.retry_after.get(chat_id,0):return False
+            if not state['present']: return False
+            if state['notice_id'] and state['signature'] == self.signature: return True
+        if time.monotonic() < self.retry_after.get(chat_id, 0): return False
         try:
-            sent = await bot.send_message(chat_id,self.notice,parse_mode=None)
-            self.store.notified(chat_id,sent.message_id,self.signature)
-        except (TelegramError,OSError,sqlite3.Error) as error:
-            if len(self.retry_after)>=10000:self.retry_after.pop(next(iter(self.retry_after)))
-            self.retry_after[chat_id] = time.monotonic()+60
-            logging.getLogger(__name__).warning('Журнал чата %s не запущен: предупреждение не доставлено (%s)',chat_id,type(error).__name__)
+            sent = await bot.send_message(chat_id, self.notice, parse_mode=None)
+            self.store.notified(chat_id, sent.message_id, self.signature)
+        except (TelegramError, OSError, sqlite3.Error) as error:
+            if len(self.retry_after) >= 10000:
+                self.retry_after.pop(next(iter(self.retry_after)))
+            self.retry_after[chat_id] = time.monotonic() + 60
+            logging.getLogger(__name__).warning(
+                'Журнал чата %s не запущен: предупреждение не доставлено (%s)',
+                chat_id, type(error).__name__,
+            )
             return False
-        self.retry_after.pop(chat_id,None)
-        try:
-            await bot.pin_chat_message(chat_id,sent.message_id,disable_notification=False)
-        except TelegramError:
-            pass  # Pinning is best effort; the visible notice was delivered.
+        self.retry_after.pop(chat_id, None)
         return True
 
     async def handle(self, update, context):
